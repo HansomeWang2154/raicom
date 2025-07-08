@@ -1,4 +1,4 @@
-<launch>
+www<launch>
     <node name="stm32_comm_node" pkg="commu" type="stm32_comm_node.py" output="screen">
         <param name="port" value="/dev/ttyS7" />
         <param name="baudrate" value="921600" />

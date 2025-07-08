@@ -1,10 +1,18 @@
 # 通用代价地图配置
 obstacle_range: 2.5        # 检测障碍物的最大范围
 raytrace_range: 3.0        # 射线追踪清除障碍物的范围
-footprint: [[0.35, 0.35], [0.35, -0.35], [-0.35, -0.35], [-0.35, 0.35]]  # 机器人轮廓
-inflation_radius: 0.1      # 障碍物膨胀半径
-cost_scaling_factor: 3.0   # 代价缩放因子
+footprint: [[0.34, 0.44], [0.34, -0.44], [-0.34, -0.44], [-0.34, 0.44]]  # 机器人轮廓
+inflation_radius: 0.03      # 障碍物膨胀半径
+cost_scaling_factor: 10.0   # 代价缩放因子
 
 # 传感器配置
-observation_sources: laser_scan_sensor
-laser_scan_sensor: {sensor_frame: laser, data_type: LaserScan, topic: scan, marking: true, clearing: true}
+# observation_sources: laser_scan_sensor
+# laser_scan_sensor: {sensor_frame: base_laser, data_type: LaserScan, topic: scan, marking: true, clearing: true}
+
+obstacle_layer:
+  observation_sources: scan  # 统一使用scan
+  scan:
+    data_type: LaserScan
+    topic: /scan
+    marking: true
+    clearing: true

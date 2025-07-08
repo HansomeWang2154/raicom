@@ -27,7 +27,7 @@ sudo apt install python3-wstool python3-catkin-tools python3-rosdep
 
 ```bash
 cd ~/piper_ros
-source devel/setup.bash
+source devel/setup.bash1`
 ```
 
 #### 2.1.1 运行(有夹爪)

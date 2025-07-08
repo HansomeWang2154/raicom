@@ -47,8 +47,8 @@ class VelocitySerialNode:
     def velocity_callback(self, msg):
         try:
             # 速度缩放系数
-            velocity_scale = 5.0
-            
+            velocity_scale = 25.0
+            omega_scale = 25.0
             # 调试：打印原始数据
             rospy.loginfo(f"原始数据: lineax={msg.linear.x}, lineay={msg.linear.y}, angular={msg.angular.z}")
             
@@ -60,7 +60,7 @@ class VelocitySerialNode:
             # 缩放速度值
             scaled_linear_x = float(msg.linear.x) * velocity_scale
             scaled_linear_y = float(msg.linear.y) * velocity_scale
-            scaled_angular_z = float(msg.angular.z) * velocity_scale
+            scaled_angular_z = float(msg.angular.z) * (-omega_scale)
             
             # 调试：打印缩放后的数据
             rospy.loginfo(f"缩放后数据: lineax={scaled_linear_x}, lineay={scaled_linear_y}, angular={scaled_angular_z}")

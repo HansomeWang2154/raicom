@@ -5,7 +5,7 @@
     <arg name="respawn" default="true" doc="是否自动重启节点，默认为 true" />
 
     <!-- velocity_serial_node 串口通信节点 -->
-    <node name="velocity_serial_node" pkg="commu" type="velocity_serial_node1.py" output="screen">
+    <node name="velocity_serial_node" pkg="commu" type="velocity_serial_node.py" output="screen">
         <!-- 通过 $(arg port) 动态传递参数 -->
         <param name="port" type="string" value="$(arg port)" />
         <param name="baudrate" type="int" value="$(arg baudrate)" />

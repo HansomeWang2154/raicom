@@ -5,26 +5,24 @@
   <arg name="local_costmap_params_file" default="$(find mecanum_navigation)/config/local_costmap_params.yaml"/>
   <arg name="dwa_planner_params_file" default="$(find mecanum_navigation)/config/dwa_local_planner_params.yaml"/>
 
-  <arg name="base_local_planner" default="dwa_local_planner/DWAPlannerROS"/>
-
-  <!-- 设置命名空间 -->
-  <arg name="ns" default="move_base"/>
-  <group ns="$(arg ns)">
-    <!-- 启动move_base节点 -->
-    <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
-      <rosparam file="$(arg costmap_common_params_file)" command="load" ns="global_costmap"/>
-      <rosparam file="$(arg costmap_common_params_file)" command="load" ns="local_costmap"/>
-      <rosparam file="$(arg global_costmap_params_file)" command="load"/>
-      <rosparam file="$(arg local_costmap_params_file)" command="load"/>
-      <rosparam file="$(arg dwa_planner_params_file)" command="load"/>
-      
-      <param name="base_local_planner" value="$(arg base_local_planner)"/>
-      <param name="controller_frequency" value="10.0"/>
-      <param name="controller_patience" value="3.0"/>
-      <param name="planner_frequency" value="0.5"/>
-      <param name="planner_patience" value="5.0"/>
-      <param name="oscillation_timeout" value="10.0"/>
-      <param name="oscillation_distance" value="0.2"/>
-    </node>
-  </group>
+  <!-- 直接启动move_base节点，不嵌套group -->
+  <node pkg="move_base" type="move_base" name="move_base" respawn="false" output="screen">
+    <!-- 参数加载方式保持不变 -->
+    <rosparam file="$(arg costmap_common_params_file)" command="load" ns="global_costmap"/>
+    <rosparam file="$(arg costmap_common_params_file)" command="load" ns="local_costmap"/>
+    <rosparam file="$(arg global_costmap_params_file)" command="load"/>
+    <rosparam file="$(arg local_costmap_params_file)" command="load"/>
+    <rosparam file="$(arg dwa_planner_params_file)" command="load"/>
+    
+    <!-- 局部规划器参数 -->
+    <param name="base_local_planner" value="dwa_local_planner/DWAPlannerROS"/>
+    <param name="controller_frequency" value="10.0"/>
+    <param name="controller_patience" value="3.0"/>
+    <param name="planner_frequency" value="0.5"/>
+    <param name="planner_patience" value="5.0"/>
+    <param name="oscillation_timeout" value="10.0"/>
+    <param name="oscillation_distance" value="0.2"/>
+  </node>
 </launch>
+
+

@@ -13,8 +13,8 @@
     
     <!-- 传感器配置 -->
     <param name="laser_max_beams" value="60"/>
-    <param name="laser_max_range" value="10.0"/>
-    <param name="laser_min_range" value="0.1"/>
+    <param name="laser_max_range" value="1.0"/>
+    <param name="laser_min_range" value="0.02"/>
     
     <!-- AMCL算法参数 -->
     <param name="min_particles" value="500"/>

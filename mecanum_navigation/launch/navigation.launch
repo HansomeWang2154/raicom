@@ -15,9 +15,22 @@
   <!-- 启动AMCL定位 -->
   <include file="$(find mecanum_navigation)/launch/amcl.launch"/>
   
+
+  <!-- 3. 融合定位配置 -->
+  <!-- <include file="$(find mecanum_navigation)/launch/amcl.launch">
+    <arg name="scan_topic" value="/scan" />
+    <arg name="odom_frame_id" value="odom" />
+    <arg name="base_frame_id" value="base_link" />
+    <arg name="global_frame_id" value="map" />
+  </include> -->
+
+  <!-- 4. 导航栈 -->
+  <!-- <include file="$(find mecanum_navigation)/launch/move_base.launch">
+    <arg name="odom_topic" value="/odom" />
+  </include> -->
   <!-- 启动MoveBase导航 -->
   <include file="$(find mecanum_navigation)/launch/move_base.launch"/>
   
   <!-- 启动RViz可视化 -->
-  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find mecanum_navigation)/config/navigation.rviz"/>
+  <!-- <node pkg="rviz" type="rviz" name="rviz" args="-d $(find mecanum_navigation)/config/navigation.rviz"/> -->
 </launch>

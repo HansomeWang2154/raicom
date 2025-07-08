@@ -9,9 +9,9 @@ class KeyboardTeleop:
         self.pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
         
         # 速度参数配置
-        self.linear_speed = 0.5    # 默认线速度(m/s)
-        self.angular_speed = 0.5   # 默认角速度(rad/s)
-        self.speed_step = 0.1      # 速度调节步长
+        self.linear_speed = 0.1    # 默认线速度(m/s)
+        self.angular_speed = 0.1   # 默认角速度(rad/s)
+        self.speed_step = 0.02      # 速度调节步长
         
         # 当前速度指令
         self.twist = Twist()

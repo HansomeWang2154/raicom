@@ -1,0 +1,20 @@
+amcl:
+  # 粒子滤波核心参数
+  min_particles: 100       # 最小粒子数（原默认30）
+  max_particles: 500       # 最大粒子数（原默认5000）
+  kld_err: 0.05            # 采样误差阈值（已设置）
+  kld_z: 0.99              # 正态分布分位数
+  
+  # 传感器模型参数  
+  laser_min_range: 0.1     # 最小有效距离
+  laser_max_range: 12.0    # 最大有效距离
+  laser_max_beams: 60       # 使用激光束数量
+  
+  # 里程计噪声模型
+  odom_model_type: "diff-corrected"
+  odom_alpha1: 0.2         # 旋转噪声（陀螺漂移）
+  odom_alpha2: 0.2         # 平移噪声（轮子打滑）
+  
+  # 更新阈值
+  update_min_d: 0.1        # 最小移动距离触发更新(m)
+  update_min_a: 0.2        # 最小旋转角度触发更新(rad)
