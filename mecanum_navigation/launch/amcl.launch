@@ -1,0 +1,41 @@
+<launch>
+  <!-- AMCL 定位配置 -->
+  <arg name="use_map_topic" default="false"/>
+  <arg name="initial_pose_x" default="0.0"/>
+  <arg name="initial_pose_y" default="0.0"/>
+  <arg name="initial_pose_a" default="0.0"/>
+  
+  <!-- 启动AMCL节点 -->
+  <node pkg="amcl" type="amcl" name="amcl" output="screen">
+    <!-- 地图配置 -->
+    <param name="use_map_topic" value="$(arg use_map_topic)"/>
+    <param name="first_map_only" value="true"/>
+    
+    <!-- 传感器配置 -->
+    <param name="laser_max_beams" value="60"/>
+    <param name="laser_max_range" value="10.0"/>
+    <param name="laser_min_range" value="0.1"/>
+    
+    <!-- AMCL算法参数 -->
+    <param name="min_particles" value="500"/>
+    <param name="max_particles" value="5000"/>
+    <param name="kld_err" value="0.05"/>
+    <param name="kld_z" value="0.99"/>
+    
+    <!-- 机器人运动模型参数 -->
+    <param name="odom_model_type" value="diff"/>
+    <param name="odom_alpha5" value="0.1"/>
+    <param name="transform_tolerance" value="0.2"/>
+    
+    <!-- 初始位姿 -->
+    <param name="initial_pose_x" value="$(arg initial_pose_x)"/>
+    <param name="initial_pose_y" value="$(arg initial_pose_y)"/>
+    <param name="initial_pose_a" value="$(arg initial_pose_a)"/>
+    <param name="initial_cov_xx" value="0.5"/>
+    <param name="initial_cov_yy" value="0.5"/>
+    <param name="initial_cov_aa" value="0.2"/>
+  </node>
+  
+  <!-- 启动map_server以加载地图 -->
+  <include file="$(find mecanum_navigation)/launch/map_server.launch"/>
+</launch>

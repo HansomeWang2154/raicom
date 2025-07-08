@@ -1,0 +1,21 @@
+<launch>
+    <!-- 定义可传递的参数 -->
+    <arg name="port" default="/dev/ttyUSB1" doc="串口设备路径，默认为 /dev/ttyUSB1" />
+    <arg name="baudrate" default="921600" doc="波特率，默认为 921600" />
+    <arg name="respawn" default="true" doc="是否自动重启节点，默认为 true" />
+
+    <!-- velocity_serial_node 串口通信节点 -->
+    <node name="velocity_serial_node" pkg="commu" type="velocity_serial_node1.py" output="screen">
+        <!-- 通过 $(arg port) 动态传递参数 -->
+        <param name="port" type="string" value="$(arg port)" />
+        <param name="baudrate" type="int" value="$(arg baudrate)" />
+        <param name="respawn" type="bool" value="$(arg respawn)" />
+    </node>
+
+    <!-- 键盘控制节点（保持不变） -->
+    <node name="keyboard_teleop" pkg="commu" type="keyboard_teleop.py" output="screen">
+        <param name="linear_speed" type="double" value="0.5" />
+        <param name="angular_speed" type="double" value="0.5" />
+        <param name="speed_step" type="double" value="0.1" />
+    </node>
+</launch>

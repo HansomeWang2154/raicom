@@ -1,0 +1,11 @@
+# laser_filter.yaml
+scan_filter_chain:
+- name: box_filter
+  type: laser_filters/LaserScanBoxFilter
+  params:
+    box_frame: base_link  # 坐标系，根据实际情况修改
+    min_x: -0.35           # 矩形区域最小X坐标(米)
+    max_x: 0.35            # 矩形区域最大X坐标(米)
+    min_y: -0.35           # 矩形区域最小Y坐标(米)
+    max_y: 0.35            # 矩形区域最大Y坐标(米)
+    clip_value: 0.0       # 超出范围的点被设为此值(0表示移除)

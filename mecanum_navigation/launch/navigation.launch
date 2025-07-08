@@ -1,0 +1,23 @@
+<launch>
+
+    <node pkg="tf" type="static_transform_publisher" name="base_footprint_broadcaster"
+            args="0 0 0 0 0 0  base_link base_footprint 100" />
+  <!-- 启动机器人状态发布者 -->
+  <!-- <include file="$(find mecanum_navigation)/launch/robot_state_publisher.launch"/> -->
+  
+  <!-- 启动激光雷达驱动（根据实际传感器修改） -->
+  <!-- <include file="$(find ldlidar_ros)/launch/ld06.launch"/> -->
+  
+  <!-- 启动里程计源（根据实际底盘修改） -->
+  <!-- <node pkg="your_odometry_package" type="odometry_node" name="odometry_node"/> -->
+  
+  <!-- <include file="$(find mecanum_navigation)/launch/map_server.launch"/> -->
+  <!-- 启动AMCL定位 -->
+  <include file="$(find mecanum_navigation)/launch/amcl.launch"/>
+  
+  <!-- 启动MoveBase导航 -->
+  <include file="$(find mecanum_navigation)/launch/move_base.launch"/>
+  
+  <!-- 启动RViz可视化 -->
+  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find mecanum_navigation)/config/navigation.rviz"/>
+</launch>

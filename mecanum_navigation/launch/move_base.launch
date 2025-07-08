@@ -1,0 +1,30 @@
+<launch>
+  <!-- 加载参数 -->
+  <arg name="costmap_common_params_file" default="$(find mecanum_navigation)/config/costmap_common_params.yaml"/>
+  <arg name="global_costmap_params_file" default="$(find mecanum_navigation)/config/global_costmap_params.yaml"/>
+  <arg name="local_costmap_params_file" default="$(find mecanum_navigation)/config/local_costmap_params.yaml"/>
+  <arg name="dwa_planner_params_file" default="$(find mecanum_navigation)/config/dwa_local_planner_params.yaml"/>
+
+  <arg name="base_local_planner" default="dwa_local_planner/DWAPlannerROS"/>
+
+  <!-- 设置命名空间 -->
+  <arg name="ns" default="move_base"/>
+  <group ns="$(arg ns)">
+    <!-- 启动move_base节点 -->
+    <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
+      <rosparam file="$(arg costmap_common_params_file)" command="load" ns="global_costmap"/>
+      <rosparam file="$(arg costmap_common_params_file)" command="load" ns="local_costmap"/>
+      <rosparam file="$(arg global_costmap_params_file)" command="load"/>
+      <rosparam file="$(arg local_costmap_params_file)" command="load"/>
+      <rosparam file="$(arg dwa_planner_params_file)" command="load"/>
+      
+      <param name="base_local_planner" value="$(arg base_local_planner)"/>
+      <param name="controller_frequency" value="10.0"/>
+      <param name="controller_patience" value="3.0"/>
+      <param name="planner_frequency" value="0.5"/>
+      <param name="planner_patience" value="5.0"/>
+      <param name="oscillation_timeout" value="10.0"/>
+      <param name="oscillation_distance" value="0.2"/>
+    </node>
+  </group>
+</launch>

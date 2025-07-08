@@ -1,0 +1,41 @@
+<rviz config="
+  <VisualizationManager class='rviz::VisualizationManager' version='1.12.16'>
+    <Property name='Global Options'>
+      <Property name='Fixed Frame' value='map'/>
+      <Property name='Alpha' value='0.5'/>
+      <Property name='Color' value='160; 160; 164'/>
+      <Property name='Line Style'>
+        <Property name='Line Width' value='0.03'/>
+      </Property>
+    </Property>
+    <Display class='rviz::Grid' name='Grid'>
+      <Property name='Alpha' value='0.5'/>
+      <Property name='Color' value='160; 160; 164'/>
+      <Property name='Line Style'>
+        <Property name='Line Width' value='0.03'/>
+      </Property>
+    </Display>
+    <Display class='rviz::Map' name='Map'>
+      <Property name='Topic' value='/map'/>
+      <Property name='Color Scheme' value='map'/>
+    </Display>
+    <Display class='rviz::LaserScan' name='LaserScan'>
+      <Property name='Topic' value='/scan'/>
+      <Property name='Size (m)' value='0.03'/>
+    </Display>
+    <Display class='rviz::Path' name='Global Path'>
+      <Property name='Topic' value='/move_base/GlobalPlanner/plan'/>
+      <Property name='Color' value='0; 255; 0'/>
+    </Display>
+    <Display class='rviz::Path' name='Local Path'>
+      <Property name='Topic' value='/move_base/DWAPlannerROS/local_plan'/>
+      <Property name='Color' value='255; 0; 0'/>
+    </Display>
+    <Display class='rviz::RobotModel' name='RobotModel'>
+      <Property name='TF Prefix' value=''/>
+    </Display>
+    <Display class='rviz::TF' name='TF'>
+      <Property name='Marker Scale' value='0.1'/>
+    </Display>
+  </VisualizationManager>
+"/>
