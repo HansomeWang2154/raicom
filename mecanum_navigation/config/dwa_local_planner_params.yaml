@@ -44,13 +44,13 @@ DWAPlannerROS:
   min_vel_x: -1.0      # 后退速度（比前进稍小）
   max_vel_y: 1.0       # 横向移动速度（保守值）
   min_vel_y: -1.0
-  max_vel_theta: 0.05   # 旋转速度(rad/s)
-  min_vel_theta: -0.05
+  max_vel_theta: 0.5   # 旋转速度(rad/s)
+  min_vel_theta: -0.5
 
   # 加速度限制（更安全的值）
   acc_lim_x: 2       # X轴加速度(m/s²)
   acc_lim_y: 2       # Y轴加速度  
-  acc_lim_theta: 0.05    # 旋转加速度(rad/s²)
+  acc_lim_theta: 0.1    # 旋转加速度(rad/s²)
 
   # 目标容差（统一值）
   xy_goal_tolerance: 0.15    # XY容差(m)
