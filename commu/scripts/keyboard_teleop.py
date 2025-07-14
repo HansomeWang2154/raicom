@@ -58,12 +58,12 @@ class KeyboardTeleop:
                     # 增加速度
                     self.linear_speed = min(2.0, self.linear_speed + self.speed_step)
                     self.angular_speed = min(3.0, self.angular_speed + self.speed_step)
-                    print(f"速度增加: 线速度={self.linear_speed:.1f}m/s, 角速度={self.angular_speed:.1f}rad/s")
+                    print(f"速度增加: 线速度={self.linear_speed:.2f}m/s, 角速度={self.angular_speed:.2f}rad/s")
                 elif key == '-':
                     # 减小速度 (最小0.1)
                     self.linear_speed = max(0.1, self.linear_speed - self.speed_step)
                     self.angular_speed = max(0.1, self.angular_speed - self.speed_step)
-                    print(f"速度减小: 线速度={self.linear_speed:.1f}m/s, 角速度={self.angular_speed:.1f}rad/s")
+                    print(f"速度减小: 线速度={self.linear_speed:.2f}m/s, 角速度={self.angular_speed:.2f}rad/s")
                 elif key == ' ':
                     # 紧急停止
                     self.twist = Twist()
