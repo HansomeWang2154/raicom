@@ -14,7 +14,11 @@ rosrun map_server map_saver -f /home/orangepi/eyes_piper/piper_ros/src/mecanum_n
 
 # 开启move_base导航
 roslaunch mecanum_navigation navigation.launch
-在rviz中发布nav_goal或者写ros节点发布
+movebase需要一条tf树，可以先运行gmapping再终止快捷建立
+# 在rviz中发布nav_goal或者写ros节点发布
+rosrun mecanum_navigation multi_goal_publisher.py
+
+
 
 # 使用rostopic发布目标/取消目标
 rostopic pub -1 /move_base_simple/goal geometry_msgs/PoseStamped "
