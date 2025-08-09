@@ -19,7 +19,7 @@ rosrun gmapping slam_gmapping scan：=scan #gmapping建图
 
 # 保存地图
 ```
-rosrun map_server map_saver -f /home/orangepi/eyes_piper/piper_ros/src/mecanum_navigation/maps/my_map  #保存地图
+rosrun map_server map_saver -f /home/orangepi/eyes_piper/piper_ros/src/mecanum_navigation/maps/my_map1  #保存地图
 ```
 
 # 开启move_base导航
@@ -32,6 +32,7 @@ movebase需要一条tf树，可以先运行gmapping再终止快捷建立
 rosrun mecanum_navigation multi_goal_publisher.py
 ```
 
+rosparam set /move_base/DWAPlannerROS/min_vel_theta -1.0
 
 
 # 使用rostopic发布目标/取消目标
@@ -45,13 +46,13 @@ header:
 pose:
   position:
     x: 0.0  # 目标x坐标
-    y: 0.0  # 目标y坐标
+    y: 1.0  # 目标y坐标
     z: 0.0
   orientation:
     x: 0.0
     y: 0.0
-    z: 1.0  # 目标朝向(z,w需构成单位四元数)
-    w: 0.0
+    z: 0.0  # 目标朝向(z,w需构成单位四元数)
+    w: 1.0
 "
 ```
 

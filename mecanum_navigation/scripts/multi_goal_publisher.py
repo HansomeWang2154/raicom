@@ -2,7 +2,7 @@
 import rospy
 import actionlib
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
-from geometry_msgs.msg import PoseStamped, Pose, Point, Quaternion
+from geometry_msgs.msg import Point, Quaternion
 from actionlib_msgs.msg import GoalStatus
 from tf.transformations import quaternion_from_euler
 
@@ -25,13 +25,14 @@ class MultiGoalPublisher:
         
         # 定义三个目标位置 (x, y, theta角度) - 根据您的实际地图修改这些坐标
         self.goal_list = [
-            (1.0, 0.5, 0.0),     # 目标点1
-            (2.0, -1.0, 1.57),   # 目标点2 (90度)
-            (0.5, 1.5, 3.14)     # 目标点3 (180度)
+            (0.0, 0.3, 0.0),     # 目标点1
+            (1.0, 0.3, 0.0),     # 目标点2
+            (2.0, 0.3, 0.0)      # 目标点3
         ]
         
         # 启动目标发布流程
         self.current_goal_index = 0
+        self.goal_active = False
         self.publish_next_goal()
     
     def publish_next_goal(self):
@@ -39,6 +40,13 @@ class MultiGoalPublisher:
             rospy.loginfo("所有目标点已完成!")
             rospy.signal_shutdown("任务完成")
             return
+        
+        # 确保前一个目标已完全清理
+        if self.goal_active:
+            rospy.logwarn("取消当前活动目标")
+            self.client.cancel_goal()
+            rospy.sleep(0.5)  # 等待取消完成
+            self.goal_active = False
         
         # 获取当前目标
         goal_info = self.goal_list[self.current_goal_index]
@@ -59,6 +67,7 @@ class MultiGoalPublisher:
         # 发布目标
         rospy.loginfo(f"发布目标#{self.current_goal_index+1}: 位置({x:.1f}, {y:.1f}), 朝向: {theta:.2f} 弧度")
         self.client.send_goal(goal, done_cb=self.goal_done_cb)
+        self.goal_active = True
         
         # 设置20秒超时
         self.timeout_timer = rospy.Timer(rospy.Duration(20.0), self.timeout_cb, oneshot=True)
@@ -68,6 +77,9 @@ class MultiGoalPublisher:
         # 取消超时计时器
         if hasattr(self, 'timeout_timer') and self.timeout_timer.is_alive():
             self.timeout_timer.shutdown()
+        
+        # 标记目标不再活动
+        self.goal_active = False
         
         # 检查目标状态
         if status == GoalStatus.SUCCEEDED:
@@ -84,6 +96,9 @@ class MultiGoalPublisher:
         self.publish_next_goal()
     
     def timeout_cb(self, event):
+        if not self.goal_active:
+            return  # 如果目标已不活动，忽略超时
+            
         rospy.logwarn(f"目标#{self.current_goal_index+1} 20秒超时，取消当前目标")
         
         # 取消当前目标
@@ -91,6 +106,7 @@ class MultiGoalPublisher:
         
         # 等待确认取消
         rospy.sleep(0.5)
+        self.goal_active = False
         
         # 移动到下一个目标
         self.current_goal_index += 1
