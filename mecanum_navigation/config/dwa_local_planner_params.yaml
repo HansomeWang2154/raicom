@@ -39,39 +39,43 @@
 
 
 DWAPlannerROS:
+
+  scaling_speed: 0.40              # 起始速度(m/s)
+  max_scaling_factor: 0.2         # 最大缩放系数
   # 速度限制（麦轮全向）
-  max_vel_x: 1.       # 前进最大速度(m/s)
+  max_vel_x: 1.0       # 前进最大速度(m/s)
   min_vel_x: -1.0      # 后退速度（比前进稍小）
+  max_vel_trans: 1.0 
   max_vel_y: 1.0       # 横向移动速度（保守值）
   min_vel_y: -1.0
   max_vel_theta: 1.0   # 旋转速度(rad/s)
   min_vel_theta: -1.0
 
   # 加速度限制（更安全的值）
-  acc_lim_x: 3       # X轴加速度(m/s²)
-  acc_lim_y: 3       # Y轴加速度  
-  acc_lim_theta: 2.0    # 旋转加速度(rad/s²)
+  acc_lim_x: 4       # X轴加速度(m/s²)
+  acc_lim_y: 4       # Y轴加速度  
+  acc_lim_theta: 1.0    # 旋转加速度(rad/s²)
 
   # 目标容差（统一值）
-  xy_goal_tolerance: 0.05    # XY容差(m)
+  xy_goal_tolerance: 0.08    # XY容差(m)
   yaw_goal_tolerance: 0.15    # 角度容差(rad)
   latch_xy_goal_tolerance: true
 
   # 全向移动配置
   holonomic_robot: true
-  heading_lookahead: 1.0     # 缩短前瞻距离
+  heading_lookahead: 2.0     # 缩短前瞻距离
   heading_scoring: false
   heading_scoring_timestep: 0.5
 
   # 轨迹生成参数
-  sim_time: 1.7              # 缩短预测时长（原1.7）
+  sim_time: 1.5              # 缩短预测时长（原1.7）
   sim_granularity: 0.05      # 降低轨迹分辨率（原0.025）
   vx_samples: 10            # 减少采样点（原20）
   vy_samples: 10
   theta_samples: 10
 
   # 避障关键参数
-  path_distance_bias: 0.1    # 路径跟随权重
-  goal_distance_bias: 0.9    # 目标点权重
+  path_distance_bias: 32    # 路径跟随权重
+  goal_distance_bias: 24    # 目标点权重
   occdist_scale: 0.1         # 障碍物避让权重
   stop_time_buffer: 0.2      # 紧急停止缓冲时间

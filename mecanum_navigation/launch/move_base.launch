@@ -5,6 +5,11 @@
   <arg name="local_costmap_params_file" default="$(find mecanum_navigation)/config/local_costmap_params.yaml"/>
   <arg name="dwa_planner_params_file" default="$(find mecanum_navigation)/config/dwa_local_planner_params.yaml"/>
 
+  <!-- 添加新的静态环境参数文件 -->
+  <!-- <arg name="static_global_planner_params_file" default="$(find mecanum_navigation)/config/static_global_planner_params.yaml"/> -->
+  <arg name="static_recovery_params_file" default="$(find mecanum_navigation)/config/recovery_params.yaml"/>
+
+
   <!-- 直接启动move_base节点，不嵌套group -->
   <node pkg="move_base" type="move_base" name="move_base" respawn="false" output="screen">
     <!-- 参数加载方式保持不变 -->
@@ -13,6 +18,8 @@
     <rosparam file="$(arg global_costmap_params_file)" command="load"/>
     <rosparam file="$(arg local_costmap_params_file)" command="load"/>
     <rosparam file="$(arg dwa_planner_params_file)" command="load"/>
+
+    <rosparam file="$(arg static_recovery_params_file)" command="load"/>
     
     <!-- 局部规划器参数 -->
     <param name="base_local_planner" value="dwa_local_planner/DWAPlannerROS"/>

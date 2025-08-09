@@ -53,6 +53,9 @@ class VelocitySerialNode:
         """匹配STM32协议的速度指令发送"""
         try:
             # 速度归一化处理（-1.0~1.0）
+            # vx = vx/2
+            # vy = vy/2
+            # omega = omega/2
             vx = max(min(msg.linear.x, 1.0), -1.0)
             vy = max(min(msg.linear.y, 1.0), -1.0)
             omega = -max(min(msg.angular.z, 1.0), -1.0)

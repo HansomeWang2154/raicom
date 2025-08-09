@@ -1,0 +1,9 @@
+recovery_behaviors:
+  - name: "conservative_reset"
+    type: "clear_costmap_recovery/ClearCostmapRecovery"
+  # 移除旋转恢复行为 - 静态环境不需要
+  # - name: "rotate_recovery"
+  #   type: "rotate_recovery/RotateRecovery"
+
+conservative_reset:
+  reset_distance: 3.0      # 增大清除距离

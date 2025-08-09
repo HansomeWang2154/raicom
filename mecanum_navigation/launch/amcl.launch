@@ -13,18 +13,22 @@
     
     <!-- 传感器配置 -->
     <param name="laser_max_beams" value="60"/>
-    <param name="laser_max_range" value="1.0"/>
+    <param name="laser_max_range" value="4.0"/>
     <param name="laser_min_range" value="0.02"/>
     
     <!-- AMCL算法参数 -->
-    <param name="min_particles" value="500"/>
+    <param name="min_particles" value="1000"/>
     <param name="max_particles" value="5000"/>
     <param name="kld_err" value="0.05"/>
     <param name="kld_z" value="0.99"/>
     
     <!-- 机器人运动模型参数 -->
-    <param name="odom_model_type" value="diff"/>
-    <param name="odom_alpha5" value="0.1"/>
+    <param name="odom_model_type" value="omni"/>
+    <param name="odom_alpha1" value="0.01"/>
+    <param name="odom_alpha2" value="0.01"/>
+    <param name="odom_alpha3" value="0.01"/>
+    <param name="odom_alpha4" value="0.01"/>
+    <param name="odom_alpha5" value="0.01"/>
     <param name="transform_tolerance" value="0.2"/>
     
     <!-- 初始位姿 -->

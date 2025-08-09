@@ -1,6 +1,6 @@
 <launch>
   <!-- 加载地图参数 -->
-  <arg name="map_file" default="$(find mecanum_navigation)/maps/my_map1.yaml"/>
+  <arg name="map_file" default="$(find mecanum_navigation)/maps/my_map4.yaml"/>
   
   <!-- 启动map_server节点 -->
   <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)" output="screen"/>

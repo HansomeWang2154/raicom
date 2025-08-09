@@ -1,99 +1,3 @@
-# # DWA局部规划器配置（适合麦轮底盘）
-# DWAPlannerROS:
-#   # 速度限制（麦轮底盘支持全向移动）
-#   max_vel_x: 0.5
-#   min_vel_x: -0.2
-#   max_vel_y: 0.5
-#   min_vel_y: -0.5
-#   max_rot_vel: 1.0
-#   min_rot_vel: 0.1
-#   max_trans_vel: 0.5
-#   min_trans_vel: 0.1
-  
-#   # 加速度限制
-#   acc_lim_x: 1.0
-#   acc_lim_y: 1.0
-#   acc_lim_theta: 2.0
-  
-#   # 轨迹评分参数
-#   xy_goal_tolerance: 0.10    # XY目标容忍度
-#   yaw_goal_tolerance: 0.05   # 角度目标容忍度
-#   latch_xy_goal_tolerance: true
-  
-#   # 麦轮底盘专用参数
-#   holonomic_robot: true      # 全向移动机器人
-#   heading_lookahead: 0.325
-#   heading_scoring: false
-#   heading_scoring_timestep: 0.8
-  
-#   # 控制器频率
-#   sim_time: 1.7
-#   sim_granularity: 0.025
-#   vx_samples: 20
-#   vy_samples: 20            # 增加Y方向采样（麦轮专用）
-#   theta_samples: 40
-
-
-
-# global_frame: odom  # 必须为odom（不能是map或base_link）
-# robot_base_frame: base_footprint  # 与TF树一致
-# rolling_window: true  # 必须启用
-# width: 10.0  # 扩大范围
-# height: 10.0
-# origin_x: -10.0  # -width/2
-# origin_y: -10.0  # -height/2
-# resolution: 0.05
-
-# # 强制原点更新
-# always_send_full_costmap: true
-
-
-
-# global_frame: odom            # 必须为odom或map（不能是base_link！）
-# robot_base_frame: base_footprint   # 机器人基坐标系
-# update_frequency: 5.0        # 高频更新（建议3.0-10.0Hz）
-# publish_frequency: 2.0
-# static_map: false            # 禁用静态地图
-# rolling_window: true          # 必须为true！
-# width: 5.0                   # 局部地图宽度（米）
-# height: 5.0                  # 高度
-# resolution: 0.05             # 分辨率（需与全局地图一致）
-# origin_x: -2.5               # 原点偏移（width/2的负值）
-# origin_y: -2.5               # 确保地图中心=机器人位置
-
-
-
-# # 补充障碍物层配置
-# obstacle_layer:
-#   observation_sources: scan
-#   scan:
-#     topic: /scan              # 激光雷达话题
-#     data_type: LaserScan
-#     marking: true
-#     clearing: true
-
-# plugins:
-#   - {name: obstacle_layer, type: "costmap_2d::ObstacleLayer"}
-#   - {name: inflation_layer, type: "costmap_2d::InflationLayer"}
-
-# local_costmap:
-#   global_frame: odom       # 局部代价地图运行的坐标系，也可以是map
-#   robot_base_frame: base_link   # 也可以是map
-#   update_frequency: 5.0     # 局部代价地图的更新频率，太大会影响消耗CPU
-#   publish_frequency: 5.0    # 局部代价地图更新的发布频率，如果机器人运动很快，需要增大
-#   static_map: false      # 只能是false
-#   rolling_window: true  # 只能是true，代价地图在一个rolling window内更新
-#   width: 4     # rolling window的宽度，在rviz显示时会四舍五入
-#   height: 4    # rolling window的高度，在rviz显示时会四舍五入
-#   resolution: 0.02    # rolling window的分辨率
-#   transform_tolerance: 0.5   # tf变换的最大延迟
-
-#   plugins:
-#   - {name: obstacles_layer,  type: "costmap_2d::ObstacleLayer"}
-#   - {name: obstacles,    type: "costmap_2d::ObstacleLayer"}
-#   - {name: inflation_layer,  type: "costmap_2d::InflationLayer"}
-
-
 local_costmap:
   global_frame: odom
   robot_base_frame: base_footprint  # 必须与TF树一致
@@ -101,26 +5,26 @@ local_costmap:
   publish_frequency: 5.0
   static_map: false
   rolling_window: true
-  width: 3.0  # 扩大窗口范围
-  height: 3.0
+  width: 4.0  # 扩大窗口范围
+  height: 4.0
   resolution: 0.05  # 适当降低分辨率提高性能
   transform_tolerance: 0.5
 
   plugins:
-    - {name: obstacle_layer, type: "costmap_2d::ObstacleLayer"}
+    # - {name: obstacle_layer, type: "costmap_2d::ObstacleLayer"}
     - {name: inflation_layer, type: "costmap_2d::InflationLayer"}
 
-  obstacle_layer:
-    observation_sources: scan
-    scan:
-      topic: /scan  # 激光雷达话题
-      data_type: LaserScan
-      marking: true  # 启用障碍物标记
-      clearing: true  # 启用障碍物清除
-      min_obstacle_height: 0.0  # 最小障碍高度
-      max_obstacle_height: 2.0  # 最大障碍高度
-      expected_update_rate: 2  # 预期更新频率
+  # obstacle_layer:
+  #   observation_sources: scan
+  #   scan:
+  #     topic: /scan  # 激光雷达话题
+  #     data_type: LaserScan
+  #     marking: true  # 启用障碍物标记
+  #     clearing: true  # 启用障碍物清除
+  #     min_obstacle_height: 0.0  # 最小障碍高度
+  #     max_obstacle_height: 2.0  # 最大障碍高度
+  #     expected_update_rate: 2  # 预期更新频率
 
   inflation_layer:
-    inflation_radius: 0.03  # 膨胀半径
-    cost_scaling_factor: 5.0  # 代价缩放因子
+    inflation_radius: 0.40  # 膨胀半径
+    cost_scaling_factor: 3.0  # 代价缩放因子
