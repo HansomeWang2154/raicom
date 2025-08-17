@@ -86,3 +86,16 @@ id: ''
 
 
 现在定位基本没问题，比较稳定，问题主要出在过弯会挂蹭，晚上写下全场的逻辑，几个摘取点，几个路径点
+
+killall lxterminal
+
+
+
+rostopic pub -r 10 /cmd_vel geometry_msgs/Twist "linear:
+  x: 0.2
+  y: 0.1
+  z: 0.0
+angular:
+  x: 0.0
+  y: 0.0
+  z: 0.0"

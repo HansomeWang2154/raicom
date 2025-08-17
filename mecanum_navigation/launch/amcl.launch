@@ -1,8 +1,8 @@
 <launch>
   <!-- AMCL 定位配置 -->
   <arg name="use_map_topic" default="false"/>
-  <arg name="initial_pose_x" default="0.0"/>
-  <arg name="initial_pose_y" default="0.0"/>
+  <arg name="initial_pose_x" default="0.43"/>
+  <arg name="initial_pose_y" default="0.32"/>
   <arg name="initial_pose_a" default="0.0"/>
   
   <!-- 启动AMCL节点 -->
@@ -35,9 +35,9 @@
     <param name="initial_pose_x" value="$(arg initial_pose_x)"/>
     <param name="initial_pose_y" value="$(arg initial_pose_y)"/>
     <param name="initial_pose_a" value="$(arg initial_pose_a)"/>
-    <param name="initial_cov_xx" value="0.5"/>
-    <param name="initial_cov_yy" value="0.5"/>
-    <param name="initial_cov_aa" value="0.2"/>
+    <param name="initial_cov_xx" value="0.005"/>
+    <param name="initial_cov_yy" value="0.005"/>
+    <param name="initial_cov_aa" value="0.005"/>
   </node>
   
   <!-- 启动map_server以加载地图 -->
