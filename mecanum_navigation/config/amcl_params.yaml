@@ -1,8 +1,8 @@
 amcl:
   # 粒子滤波核心参数
-  min_particles: 1000       # 最小粒子数（原默认30）
-  max_particles: 5000       # 最大粒子数（原默认5000）
-  kld_err: 0.03            # 采样误差阈值（已设置）
+  min_particles: 100       # 最小粒子数（原默认30）1000
+  max_particles: 2000       # 最大粒子数（原默认5000）5000
+  kld_err: 0.05            # 采样误差阈值（已设置）
   kld_z: 0.99              # 正态分布分位数
   
   # 传感器模型参数  
@@ -14,10 +14,10 @@ amcl:
 
   # 里程计噪声模型
   odom_model_type: "omni"
-  odom_alpha1: 0.01         # 降低旋转噪声（原0.2）
-  odom_alpha2: 0.01         # 降低平移噪声（原0.2）
-  odom_alpha3: 0.01        # 新增：旋转相关平移噪声
-  odom_alpha4: 0.01         # 新增：平移相关旋转噪声
+  odom_alpha1: 0.1         # 降低旋转噪声（原0.2）0.01
+  odom_alpha2: 0.1         # 降低平移噪声（原0.2）
+  odom_alpha3: 0.1        # 新增：旋转相关平移噪声
+  odom_alpha4: 0.1         # 新增：平移相关旋转噪声
   
   # 更新阈值
   update_min_d: 0.02         # 降低移动距离阈值（原0.1）

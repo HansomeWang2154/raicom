@@ -6,11 +6,11 @@ if ! command -v lxterminal &> /dev/null; then
     exit 1
 fi
 
-# 关闭残留的ROS节点（保留roscore，只清理其他节点）
-killall -9 roslaunch rosnode &> /dev/null
-
-# 清除ROS缓存
-rm -rf ~/.ros/*
+## 关闭残留的ROS节点（保留roscore，只清理其他节点）
+#killall -9 roslaunch rosnode &> /dev/null
+#
+## 清除ROS缓存
+#rm -rf ~/.ros/*
 
 # 等待已有roscore启动就绪（根据实际情况调整，确保roscore已运行）
 echo "等待已有roscore启动就绪..."

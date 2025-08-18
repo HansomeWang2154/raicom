@@ -7,6 +7,7 @@ from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from geometry_msgs.msg import Point, Quaternion, Twist, PoseStamped
 from actionlib_msgs.msg import GoalStatus
 from std_msgs.msg import Int32
+from nav_msgs.msg import Odometry
 from tf.transformations import quaternion_from_euler
 
 class MultiGoalPublisher:
@@ -16,11 +17,10 @@ class MultiGoalPublisher:
         # 初始化标志位
         self.start_received = False
         self.start_time = None
-        self.goal6_published = False  # 标记目标点6是否已发布
+        self.goal6_published = False
+        self.timeout_triggered = False
         self.last_operation_time = time.time()
-        
-        # 超时配置参数（单位：秒）
-        self.TOTAL_MOTION_TIMEOUT = 240  # 总运动超时时间（4分20秒）
+        self.current_position = None  # 存储当前位置
         
         # 创建move_base客户端
         self.client = actionlib.SimpleActionClient('move_base', MoveBaseAction)
@@ -41,29 +41,29 @@ class MultiGoalPublisher:
         self.arrived_box_pub = rospy.Publisher('/wheels/arrive_box', Int32, queue_size=10)
         self.yolo_sub = rospy.Subscriber('/yolo/picked', Int32, self.yolo_callback)
         self.start_sub = rospy.Subscriber('/wheels/start', Int32, self.start_callback)
+        self.odom_sub = rospy.Subscriber('/odom', Odometry, self.odom_callback)
         self.yolo_received = False
+
+                # 超时配置参数（单位：秒）
+        self.TOTAL_MOTION_TIMEOUT = 30  # 总运动超时时间（4分20秒）
         
         # 定义目标位置
         self.goal_list = [
-            (0.90, 1.90, 0.0),     # 目标点1
-            (1.25, 1.90, 0.0),     # 目标点2
-            (2.8, 1.90, 0.0),      # 目标点3
-            (4.2, 1.90, 0.0),      # 目标点4
-            (5.8, 1.90, 0.0),      # 目标点5
-            (7.0, 1.5, 0.0),       # 目标点6
-            (7.0, 2.5, 0.0),       # 目标点7
-            (7.0, 4.5, 0.0),       # 目标点8
-            (0.5, 3.5, 0.0),       # 目标点9
-            (1.2, 3.5, 0.0),       # 目标点10
-            (1.2, 4.5, 0.0),       # 目标点11
-            (0.70, 3.0, 0.0),      # 目标点12
-            (1.15, 3.5, 0.0),      # 目标点13
-            (2.7, 3.50, 0.0),      # 目标点14
-            (4.1, 3.50, 0.0),      # 目标点15
-            (5.7, 3.50, 0.0),      # 目标点16
-            (4.0, 4.5, 0.0),       # 目标点17
-            (1.0, 4.5, 0.0),       # 目标点18
-            (0.8, 4.5, 0.0)        # 目标点19
+            (0.90, 1.85, 0.0),     # 目标点1
+            (1.25, 1.85, 0.0),     # 目标点2
+            (2.8, 1.85, 0.0),      # 目标点3
+            (4.2, 1.85, 0.0),      # 目标点4
+            (5.8, 1.85, 0.0),      # 目标点5
+            (7.0, 1.5, 0.0),      # 目标点6
+            # 移除了原来的7-11号目标点
+            (0.70, 3.0, 0.0),     # 目标点12
+            (1.15, 3.5, 0.0),     # 目标点13
+            (2.7, 3.50, 0.0),     # 目标点14
+            (4.1, 3.50, 0.0),     # 目标点15
+            (5.7, 3.50, 0.0),     # 目标点16
+            (4.0, 4.5, 0.0),      # 目标点17
+            (1.0, 4.5, 0.0),      # 目标点18
+            (0.8, 4.5, 0.0)       # 目标点19
         ]
         
         # 状态管理
@@ -71,17 +71,28 @@ class MultiGoalPublisher:
         self.goal_active = False
         self.goal_completed = False
         self.state_lock = threading.Lock()
+        self.moving_to_goal6 = False
+        self.moving_y_positive = False
+        self.moving_x_negative = False
+        
+        # 启动超时检查线程
+        self.timeout_thread = threading.Thread(target=self.check_timeout, daemon=True)
+        self.timeout_thread.start()
         
         rospy.loginfo("等待/wheels/start消息...")
         
         # 确保节点关闭时清理资源
         rospy.on_shutdown(self.shutdown_hook)
     
+    def odom_callback(self, msg):
+        """里程计回调函数，更新当前位置"""
+        self.current_position = msg.pose.pose.position
+    
     def shutdown_hook(self):
         """节点关闭时的清理工作"""
         if self.goal_active:
             self.client.cancel_goal()
-        rospy.loginfo(f"[{rospy.Time.now().to_sec()}] 节点关闭，清理资源完成")
+        rospy.loginfo(f"[{time.time()}] 节点关闭，清理资源完成")
 
     def start_callback(self, msg):
         """处理启动消息"""
@@ -95,25 +106,69 @@ class MultiGoalPublisher:
             nav_thread = threading.Thread(target=self.publish_next_goal, daemon=True)
             nav_thread.start()
     
+    def check_timeout(self):
+        """检查超时线程"""
+        while not rospy.is_shutdown():
+            current_time = time.time()
+            if self.start_time and not self.goal6_published and not self.timeout_triggered:
+                elapsed = current_time - self.start_time
+                if elapsed > 260:  # 4分20秒=260秒
+                    with self.state_lock:
+                        if not self.goal6_published and self.current_goal_index < 5:
+                            rospy.logwarn(f"[{current_time}] 超时4分20秒未到达目标点6，强制跳转")
+                            self.timeout_triggered = True
+                            if self.goal_active:
+                                self.client.cancel_goal()
+                                rospy.sleep(0.5)
+                            self.current_goal_index = 5  # 直接跳到目标点6
+                            self.goal6_published = True
+                            self.last_operation_time = time.time()
+                            threading.Thread(target=self.publish_next_goal, daemon=True).start()
+            rospy.sleep(1.0)
+
     def yolo_callback(self, msg):
         """处理YOLO检测消息"""
         if msg.data == 1:
-            self.last_operation_time = rospy.Time.now().to_sec()
+            self.last_operation_time = time.time()
             rospy.loginfo(f"[{self.last_operation_time}] 收到YOLO检测消息")
             self.yolo_received = True
     
-    def publish_velocity(self, linear_x, linear_y, duration):
-        """发布速度指令并保持指定时间"""
+    def publish_velocity(self, linear_x, linear_y, duration=None):
+        """发布速度指令"""
         twist = Twist()
         twist.linear.x = linear_x
         twist.linear.y = linear_y
         twist.angular.z = 0.0
         
-        start_time = rospy.Time.now().to_sec()
-        rate = rospy.Rate(10)  # 10Hz
+        if duration is not None:
+            start_time = time.time()
+            rate = rospy.Rate(10)  # 10Hz
+            
+            rospy.loginfo(f"[{start_time}] 发布速度指令: x方向 {linear_x} m/s, y方向 {linear_y} m/s (持续{duration}秒)")
+            while (time.time() - start_time) < duration and not rospy.is_shutdown():
+                self.cmd_vel_pub.publish(twist)
+                rate.sleep()
+            
+            # 停止
+            twist.linear.x = 0.0
+            twist.linear.y = 0.0
+            self.cmd_vel_pub.publish(twist)
+            rospy.loginfo(f"[{time.time()}] 速度指令结束")
+        else:
+            # 持续发布速度直到外部停止
+            self.cmd_vel_pub.publish(twist)
+    
+    def move_until_condition(self, linear_x, linear_y, condition_func):
+        """移动直到满足条件"""
+        twist = Twist()
+        twist.linear.x = linear_x
+        twist.linear.y = linear_y
+        twist.angular.z = 0.0
         
-        rospy.loginfo(f"[{start_time}] 发布速度指令: x方向 {linear_x} m/s, y方向 {linear_y} m/s (持续{duration}秒)")
-        while (rospy.Time.now().to_sec() - start_time) < duration and not rospy.is_shutdown():
+        rate = rospy.Rate(10)  # 10Hz
+        rospy.loginfo(f"[{time.time()}] 开始条件移动: x方向 {linear_x} m/s, y方向 {linear_y} m/s")
+        
+        while not rospy.is_shutdown() and not condition_func():
             self.cmd_vel_pub.publish(twist)
             rate.sleep()
         
@@ -121,7 +176,7 @@ class MultiGoalPublisher:
         twist.linear.x = 0.0
         twist.linear.y = 0.0
         self.cmd_vel_pub.publish(twist)
-        rospy.loginfo(f"[{rospy.Time.now().to_sec()}] 速度指令结束")
+        rospy.loginfo(f"[{time.time()}] 条件移动完成")
 
     def create_pose_stamped(self, x, y, theta):
         """创建带时间戳的位姿"""
@@ -136,19 +191,18 @@ class MultiGoalPublisher:
     
     def publish_estimated_pose(self, pose):
         """发布估计位姿"""
-        # 复用Publisher而非重复创建
-        if not hasattr(self, 'pose_pub'):
-            self.pose_pub = rospy.Publisher('/estimated_pose', PoseStamped, queue_size=10, latch=True)
-        self.pose_pub.publish(pose)
-        rospy.loginfo(f"[{rospy.Time.now().to_sec()}] 已发布估计位姿: ({pose.pose.position.x:.2f}, {pose.pose.position.y:.2f})")
+        pose_pub = rospy.Publisher('/estimated_pose', PoseStamped, queue_size=10, latch=True)
+        pose_pub.publish(pose)
+        rospy.loginfo(f"[{time.time()}] 已发布估计位姿: ({pose.pose.position.x:.2f}, {pose.pose.position.y:.2f})")
         rospy.sleep(0.1)
     
     def publish_next_goal(self):
-        """发布下一个目标点，增加底盘运动超时检查"""
+        """发布下一个目标点"""
         try:
             if not self.state_lock.acquire(blocking=True, timeout=2.0):
-                rospy.logwarn(f"[{rospy.Time.now().to_sec()}] 获取状态锁超时")
+                rospy.logwarn(f"[{time.time()}] 获取状态锁超时")
                 return
+
 
             current_time = rospy.Time.now().to_sec()
             self.last_operation_time = current_time
@@ -168,13 +222,7 @@ class MultiGoalPublisher:
                     self.current_goal_index = 5
                     self.goal6_published = True  # 标记目标点6已发布
 
-            # 在发布目标点12前发送向前速度
-            if self.current_goal_index == 11:  # 目标点12
-                self.publish_velocity(0.2, 0.0, 2.0)
-                self.publish_velocity(0.0, -0.2, 2.0)
-                rospy.sleep(0.5)  # 等待速度指令完成
 
-            # 检查是否所有目标已完成
             if self.current_goal_index >= len(self.goal_list):
                 rospy.loginfo(f"[{current_time}] 所有目标点已完成!")
                 rospy.signal_shutdown("任务完成")
@@ -191,8 +239,18 @@ class MultiGoalPublisher:
             self.goal_completed = False
             self.yolo_received = False
 
+            # 获取当前目标
             goal_info = self.goal_list[self.current_goal_index]
             x, y, theta = goal_info
+
+            # 检查是否是目标点6
+            if self.current_goal_index == 6:  # 目标点6
+                rospy.loginfo(f"[{current_time}] 到达目标点6，开始特殊移动逻辑")
+                self.moving_to_goal6 = True
+                
+                # 启动Y方向移动线程
+                threading.Thread(target=self.special_movement_logic, daemon=True).start()
+                return
 
             # 创建目标
             goal = MoveBaseGoal()
@@ -205,40 +263,83 @@ class MultiGoalPublisher:
             # 发布目标
             rospy.loginfo(f"[{current_time}] 发布目标#{self.current_goal_index+1}: 位置({x:.1f}, {y:.1f}), 朝向: {theta:.2f} 弧度")
 
-            # 发送目标
-            try:
-                self.client.send_goal(goal, done_cb=self.goal_done_cb)
-                self.goal_active = True
-                rospy.loginfo(f"[{current_time}] 目标发布成功")
-            except Exception as e:
-                rospy.logerr(f"[{current_time}] 目标发送失败: {str(e)}")
-                self.goal_active = False
+            # 异步发送目标
+            def _send_goal():
+                try:
+                    send_time = time.time()
+                    self.client.send_goal(goal, done_cb=self.goal_done_cb)
+                    self.goal_active = True
+                    rospy.loginfo(f"[{send_time}] 目标发布成功")
+                except Exception as e:
+                    rospy.logerr(f"[{time.time()}] 目标发送失败: {str(e)}")
+                    self.goal_active = False
 
-            # 设置20秒超时（使用正确的定时器关闭方法）
+            threading.Thread(target=_send_goal, daemon=True).start()
+
+            # 设置20秒超时
             if hasattr(self, 'timeout_timer'):
-                self.timeout_timer.shutdown()  # 修复：使用shutdown()而非cancel()
+                self.timeout_timer.shutdown()
             self.timeout_timer = rospy.Timer(rospy.Duration(20.0), self.timeout_cb, oneshot=True)
             rospy.loginfo(f"[{current_time}] 等待20秒，如果超时将放弃目标#{self.current_goal_index+1}")
 
         except Exception as e:
-            rospy.logerr(f"[{rospy.Time.now().to_sec()}] 发布目标异常: {str(e)}")
+            rospy.logerr(f"[{time.time()}] 发布目标异常: {str(e)}")
         finally:
             if self.state_lock.locked():
                 self.state_lock.release()
 
+    def special_movement_logic(self):
+        """目标点6的特殊移动逻辑"""
+        try:
+            # 第一阶段：Y方向正移动直到Y>4.3
+            rospy.loginfo(f"[{time.time()}] 开始Y方向正移动")
+            self.moving_y_positive = True
+            
+            def y_positive_condition():
+                return self.current_position is not None and self.current_position.y > 4.15
+            
+            self.move_until_condition(0.0, 0.5, y_positive_condition)
+            self.moving_y_positive = False
+            rospy.loginfo(f"[{time.time()}] Y方向正移动完成")
+            
+            # 第二阶段：X方向负移动直到X<0.6
+            rospy.loginfo(f"[{time.time()}] 开始X方向负移动")
+            self.moving_x_negative = True
+            
+            def x_negative_condition():
+                return self.current_position is not None and self.current_position.x < 0.3
+            
+            self.move_until_condition(-0.5, 0.0, x_negative_condition)
+            self.moving_x_negative = False
+            rospy.loginfo(f"[{time.time()}] X方向负移动完成")
+            
+            # 移动完成后继续下一个目标
+            with self.state_lock:
+                self.moving_to_goal6 = False
+                self.current_goal_index += 1  # 跳到下一个目标
+
+                self.publish_velocity(0.0, 0.1, 3)
+                self.publish_velocity(-0.1, 0.0, 3)
+                self.arrived_box_pub.publish(Int32(1))
+                rospy.sleep(5.0)
+                self.publish_next_goal()
+                
+        except Exception as e:
+            rospy.logerr(f"[{time.time()}] 特殊移动逻辑错误: {str(e)}")
+
     def goal_done_cb(self, status, result):
         """目标完成回调"""
         with self.state_lock:
-            current_time = rospy.Time.now().to_sec()
+            current_time = time.time()
             self.last_operation_time = current_time
 
             if self.goal_completed:
                 return
             self.goal_completed = True
 
-            # 取消超时计时器（使用正确的方法）
+            # 取消超时计时器
             if hasattr(self, 'timeout_timer') and self.timeout_timer.is_alive():
-                self.timeout_timer.shutdown()  # 修复：使用shutdown()而非cancel()
+                self.timeout_timer.shutdown()
 
             # 标记目标不再活动
             self.goal_active = False
@@ -253,17 +354,10 @@ class MultiGoalPublisher:
                 rospy.logwarn(f"[{current_time}] 无法到达目标#{self.current_goal_index+1}，状态代码: {status}")
 
             # 特殊点处理
-            if self.current_goal_index == 10:  # 目标点11
+            if self.current_goal_index == 18:  # 目标点19
                 rospy.loginfo(f"[{current_time}] 发布到达box消息")
-                self.publish_velocity(0.0, 0.2, 2.0)
-                self.publish_velocity(-0.2, 0.0, 3.0)
-                self.arrived_box_pub.publish(Int32(1))
-                rospy.sleep(5.0)
-
-            elif self.current_goal_index == 18:  # 目标点19
-                rospy.loginfo(f"[{current_time}] 发布到达box消息")
-                self.publish_velocity(0.0, 0.2, 2.0)
-                self.publish_velocity(-0.2, 0.0, 3.0)
+                self.publish_velocity(-0.0, 0.2, 2.0)
+                self.publish_velocity(-0.2, 0.0, 1.5)
                 self.arrived_box_pub.publish(Int32(1))
                 rospy.sleep(5.0)
 
@@ -273,14 +367,12 @@ class MultiGoalPublisher:
                 
                 rospy.loginfo(f"[{current_time}] 等待YOLO检测消息...")
                 self.yolo_received = False
-                # 增加YOLO等待超时（30秒）
-                yolo_start = current_time
                 while not self.yolo_received and not rospy.is_shutdown():
-                    if rospy.Time.now().to_sec() - yolo_start >1000:
-                        rospy.logwarn("等待YOLO消息超时，继续下一个目标")
-                        break
                     rospy.sleep(0.1)
-                rospy.loginfo(f"[{rospy.Time.now().to_sec()}] 退出YOLO等待")
+                rospy.loginfo(f"[{time.time()}] 收到YOLO检测消息")
+
+            elif self.current_goal_index in [11, 16, 17]:  # 需要立即发布下一个目标点的点
+                rospy.loginfo(f"[{current_time}] 目标点#{self.current_goal_index+1}完成，立即发布下一个目标")
 
             # 准备下一个目标
             self.current_goal_index += 1
@@ -295,7 +387,7 @@ class MultiGoalPublisher:
     def timeout_cb(self, event):
         """单目标超时处理"""
         with self.state_lock:
-            current_time = rospy.Time.now().to_sec()
+            current_time = time.time()
             self.last_operation_time = current_time
 
             if self.goal_completed:
@@ -311,17 +403,10 @@ class MultiGoalPublisher:
             self.goal_active = False
 
             # 根据目标点序号执行不同操作
-            if self.current_goal_index == 10:  # 目标点11
+            if self.current_goal_index == 18:  # 目标点19
                 rospy.loginfo(f"[{current_time}] 发布到达box消息")
-                self.publish_velocity(0.0, 0.2, 2.0)
-                self.publish_velocity(-0.2, 0.0, 3.0)
-                self.arrived_box_pub.publish(Int32(1))
-                rospy.sleep(5.0)
-
-            elif self.current_goal_index == 18:  # 目标点19
-                rospy.loginfo(f"[{current_time}] 发布到达box消息")
-                self.publish_velocity(0.0, 0.2, 2.0)
-                self.publish_velocity(-0.2, 0.0, 3.0)
+                self.publish_velocity(-0.0, 0.2, 2.0)
+                self.publish_velocity(-0.2, 0.0, 1.5)
                 self.arrived_box_pub.publish(Int32(1))
                 rospy.sleep(5.0)
 
@@ -331,14 +416,12 @@ class MultiGoalPublisher:
                 
                 rospy.loginfo(f"[{current_time}] 等待YOLO检测消息...")
                 self.yolo_received = False
-                # 增加YOLO等待超时（30秒）
-                yolo_start = current_time
                 while not self.yolo_received and not rospy.is_shutdown():
-                    if rospy.Time.now().to_sec() - yolo_start > 30:
-                        rospy.logwarn("等待YOLO消息超时，继续下一个目标")
-                        break
                     rospy.sleep(0.1)
-                rospy.loginfo(f"[{rospy.Time.now().to_sec()}] 退出YOLO等待")
+                rospy.loginfo(f"[{time.time()}] 收到YOLO检测消息")
+
+            elif self.current_goal_index in [11, 16, 17]:  # 需要立即发布下一个目标点的点
+                rospy.loginfo(f"[{current_time}] 目标点#{self.current_goal_index+1}超时，继续下一个目标")
 
             # 准备下一个目标
             self.current_goal_index += 1

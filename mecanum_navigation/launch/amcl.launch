@@ -1,8 +1,8 @@
 <launch>
   <!-- AMCL 定位配置 -->
   <arg name="use_map_topic" default="false"/>
-  <arg name="initial_pose_x" default="0.43"/>
-  <arg name="initial_pose_y" default="0.32"/>
+  <arg name="initial_pose_x" default="0.64"/>
+  <arg name="initial_pose_y" default="0.41"/>
   <arg name="initial_pose_a" default="0.0"/>
   
   <!-- 启动AMCL节点 -->

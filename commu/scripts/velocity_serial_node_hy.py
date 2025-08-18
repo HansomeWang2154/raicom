@@ -164,7 +164,7 @@ class VelocitySerialNode:
                 
                 # 处理标志位
                 if flag_status == 1:
-                    rospy.loginfo("收到下位机启动标志位，发布/wheels/start消息")
+                    # rospy.loginfo("收到下位机启动标志位，发布/wheels/start消息")
                     self.start_pub.publish(Int32(1))
                 
                 # 创建里程计消息

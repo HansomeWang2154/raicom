@@ -30,6 +30,6 @@ lxterminal -t "Lidar & RViz" -e "bash -c 'roslaunch ldlidar_ros viewer_ld06_noet
 lxterminal -t "Move Base" -e "bash -c 'roslaunch mecanum_navigation navigation.launch; exec bash'" &
 
 # 终端4: 底盘运动流程
-lxterminal -t "Base Control" -e "bash -c 'rosrun mecanum_navigation joint_run2_std.py; exec bash'" &
+lxterminal -t "Base Control" -e "bash -c 'rosrun mecanum_navigation joint_run2_open.py; exec bash'" &
 
 echo "所有组件启动中..."

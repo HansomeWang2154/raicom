@@ -16,7 +16,7 @@ roslaunch ldlidar_ros viewer_ld06_noetic.launch port_name:="/dev/ttyUSB0"  #启�
 rosrun gmapping slam_gmapping scan：=scan #gmapping建图
 ```
 
-
+rosrun mecanum_navigation joint_run2_con.py
 # 保存地图
 ```
 rosrun map_server map_saver -f /home/orangepi/eyes_piper/piper_ros/src/mecanum_navigation/maps/my_map1  #保存地图
@@ -31,7 +31,7 @@ roslaunch mecanum_navigation navigation.launch    #movebase需要一条tf树，�
 rosrun mecanum_navigation multi_goal_publisher.py
 ```
 # 底盘运动流程 #终端4
-rosrun mecanum_navigation joint_run2.py
+rosrun mecanum_navigation joint_run2_std.py
 
 rosparam set /move_base/DWAPlannerROS/min_vel_theta -1.0
 
