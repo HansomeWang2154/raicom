@@ -35,10 +35,12 @@ raicom/
 ├── piper_msgs/                   # 机械臂消息定义
 ├── piper_sim/                    # 仿真环境
 ├── ros_astra_camera/             # 深度相机驱动
-├── frames.gv                     
-├── frames.pdf                    
+├── frames.gv                      
+├── frames.pdf                     
 ├── readme.md                     # 项目说明文档
-└── start_robot.sh                # 一键启动脚本
+├── start_robot.sh                # 一键启动脚本
+├── start_robot1.sh               # 备选启动脚本1
+└── start_robot2.sh               # 备选启动脚本2
 ```
 
 ## 🎯 功能模块
@@ -95,15 +97,20 @@ sudo apt install ros-noetic-rviz ros-noetic-robot-state-publisher
 
 ### 🚀 启动机器人
 
-系统提供了一键启动脚本，方便快速运行所有必要组件：
+系统提供了多个启动脚本，方便在不同场景下使用：
 
 ```bash
 # 进入工作空间
 cd /path/to/raicom
 
-# 启动机器人（确保有执行权限）
+# 使用主启动脚本（确保有执行权限）
 chmod +x start_robot.sh
 ./start_robot.sh
+
+# 或使用备选启动脚本（根据实际需求选择）
+chmod +x start_robot1.sh start_robot2.sh
+./start_robot1.sh  # 备选启动配置1
+./start_robot2.sh  # 备选启动配置2
 ```
 
 ### 🖥️ 手动启动各组件
