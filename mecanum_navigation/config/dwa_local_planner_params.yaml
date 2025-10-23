@@ -40,38 +40,38 @@
 
 DWAPlannerROS:
 
-  scaling_speed: 0.40              # 起始速度(m/s)
-  max_scaling_factor: 0.2         # 最大缩放系数
+  scaling_speed: 0.5              # 起始速度(m/s)40
+  max_scaling_factor: 0.6         # 最大缩放系数0.2
   # 速度限制（麦轮全向）
-  max_vel_x: 1.0       # 前进最大速度(m/s)
-  min_vel_x: -1.0      # 后退速度（比前进稍小）
-  max_vel_trans: 1.0 
-  max_vel_y: 1.0       # 横向移动速度（保守值）
-  min_vel_y: -1.0
-  max_vel_theta: 1.0   # 旋转速度(rad/s)
-  min_vel_theta: -1.0
+  max_vel_x: 2.0       # 前进最大速度(m/s)
+  min_vel_x: -2.0      # 后退速度（比前进稍小）
+  max_vel_trans: 4.0 
+  max_vel_y: 2.0       # 横向移动速度（保守值）
+  min_vel_y: -2.0
+  max_vel_theta: 0.0   # 旋转速度(rad/s)
+  min_vel_theta: -0.0
 
   # 加速度限制（更安全的值）
-  acc_lim_x: 4       # X轴加速度(m/s²)
-  acc_lim_y: 4       # Y轴加速度  
-  acc_lim_theta: 1.0    # 旋转加速度(rad/s²)
+  acc_lim_x: 8.0       # X轴加速度(m/s²)
+  acc_lim_y: 8.0       # Y轴加速度  
+  acc_lim_theta: 0.0    # 旋转加速度(rad/s²)1.0
 
   # 目标容差（统一值）
   xy_goal_tolerance: 0.08    # XY容差(m)
-  yaw_goal_tolerance: 0.15    # 角度容差(rad)
+  yaw_goal_tolerance: 0.30    # 角度容差(rad)0.10
   latch_xy_goal_tolerance: true
 
   # 全向移动配置
   holonomic_robot: true
-  heading_lookahead: 2.0     # 缩短前瞻距离
+  heading_lookahead: 4.0     # 缩短前瞻距离
   heading_scoring: false
   heading_scoring_timestep: 0.5
 
   # 轨迹生成参数
-  sim_time: 1.5              # 缩短预测时长（原1.7）
+  sim_time: 1.0              # 缩短预测时长（原1.7）1.5
   sim_granularity: 0.05      # 降低轨迹分辨率（原0.025）
-  vx_samples: 10            # 减少采样点（原20）
-  vy_samples: 10
+  vx_samples: 20            # 减少采样点（原20）
+  vy_samples: 20
   theta_samples: 10
 
   # 避障关键参数

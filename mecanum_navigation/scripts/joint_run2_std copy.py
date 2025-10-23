@@ -8,6 +8,110 @@ from std_msgs.msg import Int32
 from tf.transformations import quaternion_from_euler
 import threading
 
+
+import rospy
+from std_srvs.srv import Empty
+import threading
+
+
+import rospy
+from dynamic_reconfigure.srv import Reconfigure
+from dynamic_reconfigure.msg import Config, DoubleParameter
+
+import rospy
+from dynamic_reconfigure.client import Client
+
+
+def create_pose_stamped(self, x, y, theta):
+    """创建带时间戳的位姿"""
+    pose = geometry_msgs.msg.PoseStamped()
+    pose.header.frame_id = "map"
+    pose.header.stamp = rospy.Time.now()
+    pose.pose.position.x = x
+    pose.pose.position.y = y
+    quat = quaternion_from_euler(0, 0, theta)
+    pose.pose.orientation = Quaternion(*quat)
+    return pose
+
+def publish_estimated_pose(self, pose):
+    """发布估计位姿"""
+    # 创建一个临时发布者
+    pose_pub = rospy.Publisher('/estimated_pose', geometry_msgs.msg.PoseStamped, queue_size=10, latch=True)
+    
+    # 发布位姿
+    pose_pub.publish(pose)
+    rospy.loginfo(f"已发布估计位姿: ({pose.pose.position.x:.2f}, {pose.pose.position.y:.2f})")
+    
+    # 确保消息已发送
+    rospy.sleep(0.1)
+
+
+def set_dwa_param():
+    client = Client("/move_base/DWAPlannerROS", timeout=5)
+    # 非阻塞更新参数
+    client.update_configuration({"max_vel_theta": 1.0})
+    client.update_configuration({"min_vel_theta": 1.0})
+    client.update_configuration({"acc_lim_theta": 1.0})
+
+def set_move_base_param(param_name, value):
+    try:
+        # 根据参数类型选择服务
+        if "DWAPlannerROS" in param_name:
+            service_name = "/move_base/DWAPlannerROS/set_parameters"
+        elif "global_costmap" in param_name:
+            service_name = "/move_base/global_costmap/set_parameters"
+        elif "local_costmap" in param_name:
+            service_name = "/move_base/local_costmap/set_parameters"
+        else:
+            service_name = "/move_base/set_parameters"
+        
+        rospy.wait_for_service(service_name, timeout=2.0)
+        set_param = rospy.ServiceProxy(service_name, Reconfigure)
+        
+        # 构建参数配置
+        config = Config()
+        param = DoubleParameter()
+        param.name = param_name.split('/')[-1]  # 提取参数名
+        param.value = float(value)
+        config.doubles = [param]
+        
+        # 非阻塞调用
+        future = set_param.call_async(config)
+        return future
+    except Exception as e:
+        rospy.logerr(f"参数设置失败: {str(e)}")
+        return None
+
+
+
+def reload_params_non_blocking():
+    """非阻塞参数重载函数"""
+    def _reload_thread():
+        try:
+            rospy.loginfo("开始异步重载参数...")
+            rospy.wait_for_service('/move_base/reload_parameters', timeout=2.0)
+            reload_srv = rospy.ServiceProxy('/move_base/reload_parameters', Empty)
+            
+            # 带超时的非阻塞调用
+            future = reload_srv.call_async(Empty._request_class())
+            start_time = rospy.Time.now()
+            
+            while not future.done() and (rospy.Time.now() - start_time).to_sec() < 3.0:
+                rospy.sleep(0.1)
+                
+            if future.done():
+                rospy.loginfo("参数重载成功")
+            else:
+                rospy.logwarn("参数重载超时")
+                
+        except Exception as e:
+            rospy.logerr(f"参数重载线程异常: {str(e)}")
+
+    # 启动独立线程执行重载
+    threading.Thread(target=_reload_thread, daemon=True).start()
+
+
+
 class MultiGoalPublisher:
     def __init__(self):
         rospy.init_node('multi_goal_publisher')
@@ -34,25 +138,27 @@ class MultiGoalPublisher:
         self.yolo_sub = rospy.Subscriber('/yolo/picked', Int32, self.yolo_callback)
         self.yolo_received = False
         
-        # 定义目标位置（删除目标点9和10）
+        # 定义目标位置
         self.goal_list = [
-            (0.55, 0.2, 0.0),     # 目标点1
-            (0.55, 0.70, 0.0),   # 目标点2
-            (2.21, 0.65, 0.0),   # 目标点3
-            (3.5, 0.45, 0.0),    # 目标点4
-            (5.0, 0.38, 0.0),    # 目标点5
-            (6.23, -0.30, 0.0),  # 目标点6
-            (6.30, 1.03, 0.0),   # 目标点7
-            (6.30, 3.0, 0.0),   # 目标点8
-            (0.40, 3.8, 0.0),    # 目标点9（原11）
-            (0.60, 3.0, 0.0),     # 目标点10（原12）
-            (0.92, 2.20, 0.0),   # 目标点11（原13）
-            (2.21, 2.10, 0.0),   # 目标点12（原14）
-            (3.8, 2.00, 0.0),    # 目标点13（原15）
-            (5.5, 1.90, 0.0),    # 目标点14（原16）
-            (4.0, 2.5, 0.0),     # 目标点15（原17）
-            (1.0, 2.3, 0.0),     # 目标点16（原18）
-            (0.40, 3.8, 0.0)     # 目标点17（原19）
+            (0.80, 1.8, 0.0),     # 目标点1
+            (1.15, 1.8, 0.0),   # 目标点2
+            (2.7, 1.8, 0.0),   # 目标点3
+            (4.1, 1.8, 0.0),    # 目标点4
+            (5.7, 1.8, 0.0),    # 目标点5
+            (7.0, 1.5, 0.0),  # 目标点6
+            (7.0, 2.5, 0.0),   # 目标点7
+            (7.0, 4.5, 0.0),   # 目标点8
+            (4.0, 4.5, 0.0),     # 目标点9
+            (1.0, 4.5, 0.0),     # 目标点10
+            (0.8, 4.5, 0.0),    # 目标点11 到达后发布arrive_box消息，发送向后速度
+            (0.70, 3.0, 0.0),    # 目标点12 - 发布前发送向前速度
+            (1.15, 3.5, 0.0),   # 目标点13
+            (2.7, 3.50, 0.0),   # 目标点14
+            (4.1, 3.50, 0.0),    # 目标点15
+            (5.7, 3.50, 0.0),    # 目标点16
+            (4.0, 4.5, 0.0),     # 目标点17
+            (1.0, 4.5, 0.0),     # 目标点18
+            (0.8, 4.5, 0.0)     # 目标点19 到达后发布arrive_box消息，发送向后速度
         ]
         
         # 状态管理
@@ -70,31 +176,40 @@ class MultiGoalPublisher:
             rospy.loginfo("收到YOLO检测消息")
             self.yolo_received = True
     
-    def publish_velocity(self, linear_x,linear_y, duration):
+    def publish_velocity(self, linear_x, linear_y, duration):
         """发布速度指令并保持指定时间"""
         twist = Twist()
         twist.linear.x = linear_x  # x方向速度
-        twist.linear.y = linear_y     # y方向速度为0
+        twist.linear.y = linear_y  # y方向速度
         twist.angular.z = 0.0      # 角速度为0
         
         start_time = rospy.Time.now()
         
-        rospy.loginfo(f"发布速度指令: x方向 {linear_x} m/s (持续{duration}秒)")
+        rospy.loginfo(f"发布速度指令: x方向 {linear_x} m/s, y方向 {linear_y} m/s (持续{duration}秒)")
         while (rospy.Time.now() - start_time).to_sec() < duration and not rospy.is_shutdown():
             self.cmd_vel_pub.publish(twist)
             rospy.sleep(0.1)
         
         # 停止
         twist.linear.x = 0.0
+        twist.linear.y = 0.0
         self.cmd_vel_pub.publish(twist)
         rospy.loginfo("速度指令结束")
 
+    
     def publish_next_goal(self):
         with self.state_lock:
             if self.current_goal_index >= len(self.goal_list):
                 rospy.loginfo("所有目标点已完成!")
                 rospy.signal_shutdown("任务完成")
                 return
+            
+            # 在发布目标点12前发送向前速度
+            if self.current_goal_index == 11:  # 目标点12
+            
+                self.publish_velocity(0.2, 0.0, 2.0)  # x方向-0.1，y方向0.1
+                self.publish_velocity(0.0, -0.2, 2.0)  # x方向-0.1，y方向0.1
+                rospy.sleep(0.5)  # 等待速度指令完成
             
             # 确保前一个目标已完全清理
             if self.goal_active:
@@ -157,46 +272,40 @@ class MultiGoalPublisher:
                 rospy.logwarn(f"无法到达目标#{self.current_goal_index+1}，状态代码: {status}")
             
             # 特殊点处理
-            if self.current_goal_index == 7:  # 目标点8
-                rospy.loginfo("到达目标点8，发布x方向1m/s速度持续5秒")
-                self.publish_velocity(-0.5, 0.0, 3.0)
-                rospy.sleep(0.5)
-                self.publish_velocity(-0.4, 0.0,5.0)
+            if self.current_goal_index == 10:  # 目标点11
+                rospy.loginfo("发布到达box消息")
                 # 设置新的运动参数（旋转相关）
-                rospy.loginfo("更新运动控制参数")
-                rospy.set_param('/move_base/DWAPlannerROS/max_vel_theta', 1.0)      # 最大旋转速度
-                rospy.set_param('/move_base/DWAPlannerROS/min_vel_theta', -1.0)     # 最小旋转速度
-                rospy.set_param('/move_base/DWAPlannerROS/acc_lim_theta', 1.0)     # 旋转加速度限制
+                # # 设置新参数
+                # rospy.set_param('/move_base/DWAPlannerROS/max_vel_theta', 1.0)
+                # rospy.set_param('/move_base/DWAPlannerROS/min_vel_theta', -1.0)
+                # rospy.set_param('/move_base/DWAPlannerROS/acc_lim_theta', 1.0)
+
+                # # 非阻塞重载
+                # reload_params_non_blocking()
+
+                # set_move_base_param("/move_base/DWAPlannerROS/max_vel_theta", 1.0)
+                # set_move_base_param("/move_base/DWAPlannerROS/min_vel_theta", 1.0)
+                # set_move_base_param("/move_base/DWAPlannerROS/acc_lim_theta", 1.0)
+                # set_dwa_param()
+                # 主线程继续执行其他任务
+                rospy.loginfo("参数重载已启动，主线程继续运行...")
+                self.publish_velocity(-0.0, 0.2, 2.0)  # x方向-0.1，y方向0.1
+                self.publish_velocity(-0.2, 0.0, 1.5)  # x方向-0.1，y方向0.1
+
+                self.arrived_box_pub.publish(Int32(1))
+                estimated_pose = self.create_pose_stamped(0.55, 3.50, 0.0)
+                self.publish_estimated_pose(estimated_pose)
+                rospy.sleep(5.0)  # 延时5秒
+            
+            elif self.current_goal_index == 18:  # 目标点19
+                rospy.loginfo("发布到达box消息")
                 
-                # 重载参数使设置生效
-                rospy.sleep(0.5)  # 等待参数设置完成
-                rospy.loginfo("重载move_base参数")
-                try:
-                    reload_service = rospy.ServiceProxy('/move_base/reload_parameters', Empty)
-                    reload_service()
-                except rospy.ServiceException as e:
-                    rospy.logerr(f"参数重载失败: {str(e)}")
-            
-            elif self.current_goal_index == 8:  # 目标点9（原11）
-                rospy.loginfo("发布到达box消息")
+                self.publish_velocity(-0.0, 0.2, 2.0)  # x方向-0.1，y方向0.1
+                self.publish_velocity(-0.2, 0.0, 1.5)  # x方向-0.1，y方向0.1
                 self.arrived_box_pub.publish(Int32(1))
-                self.publish_velocity(0.0, 0.1 , 1)  # y方向0.1
-                self.publish_velocity(-0.1, 0.0 , 1)  # x方向-0.1
-                rospy.sleep(5.0)
+                rospy.sleep(5.0)  # 延时5秒
             
-            elif self.current_goal_index == 16:  # 目标点17（原19）
-                rospy.loginfo("发布到达box消息")
-                self.arrived_box_pub.publish(Int32(1))
-                self.publish_velocity(0.0, 0.1 , 1)  # y方向0.1
-                self.publish_velocity(-0.1, 0.0 , 1)  # x方向-0.1
-                rospy.sleep(5.0)
-            
-            elif self.current_goal_index == 9:  # 目标点10（原12）前
-                self.publish_velocity(0.1, 0.0 , 1)  # x方向-0.1
-                self.publish_velocity(0.0, -0.1 , 1)  # y方向0.1
-                rospy.sleep(0.5)
-            
-            elif self.current_goal_index in [1, 2, 3, 4, 10, 11, 12, 13]:  # 需要等待YOLO的目标点
+            elif self.current_goal_index in [1, 2, 3, 4, 12, 13, 14, 15]:  # 需要等待YOLO的目标点
                 rospy.loginfo("发布到达消息")
                 self.arrived_pub.publish(Int32(1))
                 
@@ -206,7 +315,7 @@ class MultiGoalPublisher:
                     rospy.sleep(0.1)
                 rospy.loginfo("收到YOLO检测消息")
             
-            elif self.current_goal_index in [6, 14, 15]:  # 需要立即发布下一个目标点的点
+            elif self.current_goal_index in [8, 9, 11, 16, 17]:  # 需要立即发布下一个目标点的点
                 rospy.loginfo("目标点#{self.current_goal_index+1}完成，立即发布下一个目标")
             
             # 准备下一个目标
@@ -235,32 +344,23 @@ class MultiGoalPublisher:
             rospy.sleep(0.5)
             self.goal_active = False
             
-            # 特殊点处理
-            if self.current_goal_index == 7:  # 目标点8
-                rospy.loginfo("目标8超时，发布x方向1m/s速度持续5秒")
-                self.publish_velocity(-0.8,0.0, 3.0)
-                self.publish_velocity(-0.5,0.0, 3.0)
-            
-            elif self.current_goal_index == 8:  # 目标点9（原11）
+            # 根据目标点序号执行不同操作
+            if self.current_goal_index == 10:  # 目标点11
                 rospy.loginfo("发布到达box消息")
+                
+                self.publish_velocity(-0.0, 0.2, 2.0)  # x方向-0.1，y方向0.1
+                self.publish_velocity(-0.2, 0.0, 1.5)  # x方向-0.1，y方向0.1
                 self.arrived_box_pub.publish(Int32(1))
-                self.publish_velocity(0.0, 0.1 , 1)  # y方向0.1
-                self.publish_velocity(-0.1, 0.0 , 1)  # x方向-0.1
                 rospy.sleep(5.0)
             
-            elif self.current_goal_index == 16:  # 目标点17（原19）
+            elif self.current_goal_index == 18:  # 目标点19
                 rospy.loginfo("发布到达box消息")
+                self.publish_velocity(-0.0, 0.2, 2.0)  # x方向-0.1，y方向0.1
+                self.publish_velocity(-0.2, 0.0, 1.5)  # x方向-0.1，y方向0.1
                 self.arrived_box_pub.publish(Int32(1))
-                self.publish_velocity(0.0, 0.1 , 1)  # y方向0.1
-                self.publish_velocity(-0.1, 0.0 , 1)  # x方向-0.1
                 rospy.sleep(5.0)
             
-            elif self.current_goal_index == 9:  # 目标点10（原12）前
-                self.publish_velocity(0.1, 0.0 , 1)  # x方向-0.1
-                self.publish_velocity(0.0, -0.1 , 1)  # y方向0.1
-                rospy.sleep(0.5)
-            
-            elif self.current_goal_index in [1, 2, 3, 4, 10, 11, 12, 13]:  # 需要等待YOLO的目标点
+            elif self.current_goal_index in [1, 2, 3, 4, 12, 13, 14, 15]:  # 需要等待YOLO的目标点
                 rospy.loginfo("发布到达消息")
                 self.arrived_pub.publish(Int32(1))
                 
@@ -270,7 +370,7 @@ class MultiGoalPublisher:
                     rospy.sleep(0.1)
                 rospy.loginfo("收到YOLO检测消息")
             
-            elif self.current_goal_index in [6, 14, 15]:  # 需要立即发布下一个目标点的点
+            elif self.current_goal_index in [8, 9, 11, 16, 17]:  # 需要立即发布下一个目标点的点
                 rospy.loginfo("目标点#{self.current_goal_index+1}超时，继续下一个目标")
             
             # 准备下一个目标
